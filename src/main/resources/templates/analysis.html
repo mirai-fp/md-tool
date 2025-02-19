@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="layout :: commonHead">
+    <title>分析結果一覧</title>
+</head>
+<body>
+<header th:replace="layout :: commonHeader"></header>
+<main class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-6 fw-bold text-muted">分析結果</h1>
+        <p class="text-muted">売上と商品別の詳細データを確認できます</p>
+    </div>
+
+    <!-- 検索条件フォーム -->
+    <div class="card card-custom p-4 mb-4">
+        <form th:action="@{/analysis}" method="get" class="row g-3 justify-content-center">
+            <div class="col-md-4">
+                <label for="startDate" class="form-label">開始日付</label>
+                <input type="date" id="startDate" name="startDate" class="form-control" required
+                       th:value="${param.startDate}" />
+            </div>
+            <div class="col-md-4">
+                <label for="endDate" class="form-label">終了日付</label>
+                <input type="date" id="endDate" name="endDate" class="form-control" required
+                       th:value="${param.endDate}" />
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">検索</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            if (!startDateInput.value || !endDateInput.value) {
+                const today = new Date();
+                const day = today.getDay();
+                const lastSunday = new Date(today);
+                lastSunday.setDate(today.getDate() - day);
+                const lastMonday = new Date(lastSunday);
+                lastMonday.setDate(lastSunday.getDate() - 6);
+
+                const formatDate = (date) => {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                };
+
+                endDateInput.value = formatDate(lastSunday);
+                startDateInput.value = formatDate(lastMonday);
+            }
+        });
+    </script>
+
+    <div class="card card-custom p-4 mb-5">
+        <h2 class="mb-4 fw-bold text-muted text-center">全体 売上結果</h2>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered text-center align-middle">
+                <thead>
+                <tr>
+                    <th>子商品タイプ</th>
+                    <th>売上金額合計</th>
+                    <th>売上金額 前週比 (%)</th>
+                    <th>売上数量合計</th>
+                    <th>売上数量 前週比 (%)</th>
+                    <th>粗利</th>
+                    <th>粗利率 (%)</th>
+                    <th>昨年粗利</th>
+                    <th>昨年粗利率 (%)</th>
+                    <th>売上構成比 (%)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="result : ${record}">
+                    <td th:text="${result.childProductType}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.salesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.salesAmountChangeRate, 1, 'COMMA', 2, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.quantity, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.quantityChangeRate, 1, 'COMMA', 2, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.profit, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.profitRate, 1, 'COMMA', 2, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.previousYearProfit, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.previousYearProfitRate, 1, 'COMMA', 2, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.salesCompositionRate, 1, 'COMMA', 2, 'POINT')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card card-custom p-4">
+        <h2 class="mb-4 fw-bold text-muted text-center">商品別 売上結果</h2>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered text-center align-middle">
+                <thead>
+                <tr>
+                    <th>ブランド品番</th>
+                    <th>商品名</th>
+                    <th>売金</th>
+                    <th>売上数量</th>
+                    <th>原価</th>
+                    <th>利益</th>
+                    <th>発注数</th>
+                    <th>在庫</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="result : ${itemRecord}">
+                    <td th:text="${result.brandCode}"></td>
+                    <td th:text="${result.productName}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSales, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalWholeSales, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.profit, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.orderAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.stock, 1, 'COMMA', 0, 'POINT')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="/" class="btn btn-home btn-lg">🏠 ホームに戻る</a>
+    </div>
+
+    <div th:replace="layout :: commonScripts"></div>
+</main>
+</body>
+</html>

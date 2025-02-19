@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="layout :: commonHead">
+    <title>分析結果確認</title>
+</head>
+<body>
+<header th:replace="layout :: commonHeader"></header>
+<h1 class="mb-4">売上データ読み込み完了</h1>
+<table class="table table-bordered">
+    <tbody>
+    <tr th:each="cell : ${firstRecord}">
+        <td th:text="${cell}">Cell</td>
+    </tr>
+    </tbody>
+</table>
+<a th:href="@{/}" class="btn btn-secondary mt-3">Back to Upload</a>
+<div th:replace="layout :: commonScripts"></div>
+</body>
+</html>

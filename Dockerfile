@@ -8,6 +8,8 @@ WORKDIR /app
 COPY . .
 
 # Gradle でビルド
+RUN ls -ltr
+RUN chmod +x ./gradlew
 RUN ./gradlew build
 
 # アプリを実行

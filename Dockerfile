@@ -17,7 +17,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # ビルドされた JAR をコピー
-COPY --from=build /app/build/libs/md-tool.jar app.jar
+COPY --from=build /app/build/libs/md-tool-0.0.1-SNAPSHOT.jar app.jar
 
 # ポート 8080 を開放
 EXPOSE 8080

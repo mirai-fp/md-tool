@@ -10,5 +10,5 @@ COPY . .
 EXPOSE 8080
 
 # アプリを実行
-CMD ["gradle", "-p", "/app", "bootRun"]
+CMD ["gradle", "--no-daemon" ,"-p", "/app", "bootRun"]
 

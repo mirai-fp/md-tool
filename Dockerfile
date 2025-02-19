@@ -1,6 +1,9 @@
 # Gradle 公式イメージ（JDK 17 含む）を使用
 FROM gradle:8.5-jdk17 AS build
 
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
 # 作業ディレクトリを設定
 WORKDIR /app
 

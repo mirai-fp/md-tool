@@ -1,5 +1,5 @@
 # OpenJDK 17 の公式イメージを使用
-FROM openjdk:17
+FROM gradle:8.5-jdk17
 
 # 作業ディレクトリを設定
 WORKDIR /app
@@ -8,11 +8,8 @@ WORKDIR /app
 COPY . .
 
 # Gradle でビルド
-RUN apt-get update && apt-get install -y xargs
-RUN ls -ltr
-RUN chmod +x ./gradlew
-RUN ./gradlew build
+RUN gradle build
 
 # アプリを実行
-CMD ["java", "-jar", "build/libs/md-tool.jar"]
+CMD ["gradle", "bootRun"]
 

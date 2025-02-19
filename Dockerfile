@@ -8,6 +8,7 @@ WORKDIR /app
 COPY . .
 
 # Gradle でビルド
+RUN apt-get update && apt-get install -y xargs
 RUN ls -ltr
 RUN chmod +x ./gradlew
 RUN ./gradlew build

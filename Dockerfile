@@ -8,7 +8,7 @@ WORKDIR /app
 COPY --chown=gradle:gradle . .
 
 # Gradle キャッシュを活用しながらビルド（デーモン無効化）
-RUN gradle clean build --no-daemon
+RUN gradle clean build
 
 # JDK 17 のランタイムのみの軽量イメージを使用
 FROM openjdk:17-jdk-slim

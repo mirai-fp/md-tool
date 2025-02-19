@@ -7,6 +7,7 @@ WORKDIR /app
 # プロジェクトのファイルをコピー
 COPY . .
 
+EXPOSE 8080
 
 # アプリを実行
 CMD ["gradle", "-p", "/app", "bootRun"]

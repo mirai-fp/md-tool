@@ -13,7 +13,7 @@ import java.time.LocalDate;
 public class SalesData {
 
     @Id
-    private String id;
+    private String ids;
 
     private String shopName;
     private String parentCategory;
@@ -34,5 +34,7 @@ public class SalesData {
     private Double totalAmount;
     private LocalDate orderDate;
     private String barcode;
+    private String mall;
     private String itemHashCode;
+
 }

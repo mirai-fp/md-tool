@@ -58,8 +58,15 @@ public class CsvService {
                 salesData.setTotalAmount(Double.parseDouble(record.get("合計金額（税抜）")));
                 salesData.setOrderDate(LocalDate.parse(record.get("注文日"), DateTimeFormatter.ofPattern("yyyyMMdd")));
                 salesData.setBarcode(record.get("バーコード"));
-                salesData.setId(salesData.getBrandCode() + salesData.getCsCode() + salesData.getOrderDate().toString());
+                salesData.setMall(record.get("モール"));
+                String id = salesData.getBrandCode() + salesData.getCsCode() + salesData.getPriceType() + salesData.getSellingType() + salesData.getSellingPrice() + salesData.getMall() + salesData.getOrderDate().toString();
+                salesData.setIds(id);
                 salesData.setItemHashCode(salesData.getBrandCode() + salesData.getCsCode());
+
+                SalesData data = saleDataRepository.findByIds(id);
+                if (data != null) {
+                    System.out.println(id);
+                }
 
                 saleDataRepository.save(salesData);
             }
@@ -110,8 +117,8 @@ public class CsvService {
                 orderData.setWholesalePrice(Integer.parseInt(record.get("下代")));
                 orderData.setOrderDate(LocalDate.parse(record.get("発注日"), DateTimeFormatter.ofPattern("yyyy/MM/dd")));
                 orderData.setOrderQuantity(Integer.parseInt(record.get("発注数")));
-                orderData.setId(orderData.getBrandCode() + orderData.getOrderDate().toString());
-
+                orderData.setId(orderData.getColor() + orderData.getSize() + record.get("発注書番号"));
+                orderData.setDeliveryDate(LocalDate.parse(record.get("入荷希望日"), DateTimeFormatter.ofPattern("yyyy/MM/dd")));
                 orderDataRepository.save(orderData);
             }
         }

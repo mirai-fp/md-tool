@@ -21,6 +21,7 @@ public class OrderData {
     private Integer wholesalePrice;
     private Integer orderQuantity;
     private LocalDate orderDate;
+    private LocalDate deliveryDate;
     private String barcode;
     private String itemHashCode;
 }

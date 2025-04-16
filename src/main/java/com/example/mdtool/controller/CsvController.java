@@ -35,9 +35,22 @@ public class CsvController {
     @GetMapping("/analysis")
     public String analysis(Model model, LocalDate startDate, LocalDate endDate) {
         AnalysisResult analyze = analysisService.analyze(nonNull(startDate) ? startDate : LocalDate.of(2025, 2, 13), nonNull(endDate) ? endDate : LocalDate.of(2025, 2, 19));
+
+        model.addAttribute("overallRecord", analyze.getAnalysisOverallResult());
+        model.addAttribute("collectRecord", analyze);
+        model.addAttribute("pbRecord", analyze.getAnalysisPBResult());
         model.addAttribute("record", analyze.getAnalysisProductTypeResult());
         model.addAttribute("itemRecord", analyze.getAnalysisItemResult());
         return "analysis";
+    }
+
+    @GetMapping("/item-analysis")
+    public String itemAnalysis(Model model, String id) {
+        LocalDate startDate = null;
+        LocalDate endDate = null;
+        AnalysisResult analyze = analysisService.analyze(nonNull(startDate) ? startDate : LocalDate.of(2025, 2, 13), nonNull(endDate) ? endDate : LocalDate.of(2025, 2, 19));
+        model.addAttribute("itemRecord", analyze.getAnalysisItemResult());
+        return "itemAnalysis";
     }
 
     @PostMapping("/uploadsales")

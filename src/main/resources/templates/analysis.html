@@ -7,12 +7,84 @@
 <header th:replace="layout :: commonHeader"></header>
 <main class="container py-5">
     <div class="text-center mb-5">
-        <h1 class="display-6 fw-bold text-muted">分析結果</h1>
+        <h1 class="display-6 fw-bold text-muted">集計結果</h1>
         <p class="text-muted">売上と商品別の詳細データを確認できます</p>
+    </div>
+
+    <div class="card card-custom p-4 mb-5">
+        <h2 class="mb-4 fw-bold text-muted text-center">月累計</h2>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered text-center align-middle">
+                <thead>
+                <tr>
+                    <th>親商品タイプ</th>
+                    <th>子商品タイプ</th>
+                    <th>売上実績</th>
+                    <th>昨年売上合計</th>
+                    <th>昨年対比差額</th>
+                    <th>昨年対比売上 (%)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <th:block th:each="entry : ${overallRecord.entrySet()}">
+                    <th:block th:each="value, stat : ${entry.value}">
+                        <tr>
+                            <td th:rowspan="${#lists.size(entry.value)}" th:text="${entry.key}" th:if="${stat.index == 0}"></td>
+                            <td th:text="${value.childProductType}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.monthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.previousMonthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.previousMonthlyAmountDiff, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.previousMonthlyAmountRate*100, 1, 'COMMA', 0, 'POINT')}">%</td>
+                        </tr>
+                    </th:block>
+                </th:block>
+                </tbody>
+                <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="2">合計</td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.totalMonthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.totalPreviousMonthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.totalPreviousMonthlyAmountDiff, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${collectRecord.totalPreviousMonthlyAmount != 0 ? #numbers.formatDecimal(collectRecord.totalPreviousMonthlyAmountRate, 1, 'COMMA', 0, 'POINT') : '-'}">%</td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered text-center align-middle">
+                <thead>
+                <tr>
+                    <th>セールタイプ</th>
+                    <th>売上合計</th>
+                    <th>粗利率</th>
+                    <th>-1w売点</th>
+                    <th>-2w売点</th>
+                    <th>先週比 (%)</th>
+                    <th>売上構成比 (%)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <th:block th:each="entry : ${pbRecord.entrySet()}">
+                    <tr>
+                        <td th:text="${entry.key}"></td> <!-- セールタイプ (Mapのkey) -->
+                        <td th:text="${#numbers.formatDecimal(entry.value.totalSalesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                        <td th:text="${#numbers.formatDecimal(entry.value.profitRate, 1, 'COMMA', 2, 'POINT')} + '%'"></td>
+                        <td th:text="${entry.value.totalQuantityCurrentWeek}"></td>
+                        <td th:text="${entry.value.totalQuantityPreviousWeek}"></td>
+                        <td th:text="${#numbers.formatDecimal(entry.value.totalQuantityChangeRate, 1, 'COMMA', 2, 'POINT')} + '%'"></td>
+                        <td></td>
+                    </tr>
+                </th:block>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- 検索条件フォーム -->
     <div class="card card-custom p-4 mb-4">
+        <h2 class="mb-4 fw-bold text-muted text-center" th:text="'週次売上(' + ${collectRecord.week} + 'wk)'"></h2>
+
+        <!-- フォーム -->
         <form th:action="@{/analysis}" method="get" class="row g-3 justify-content-center">
             <div class="col-md-4">
                 <label for="startDate" class="form-label">開始日付</label>
@@ -28,6 +100,136 @@
                 <button type="submit" class="btn btn-primary w-100">検索</button>
             </div>
         </form>
+
+        <!-- テーブル -->
+        <div class="table-responsive mt-4">
+            <table class="table table-hover table-bordered text-center align-middle">
+                <thead>
+                <tr>
+                    <th>親商品タイプ</th>
+                    <th>子商品タイプ</th>
+
+                    <th>売上金額合計</th>
+                    <th>売上数量合計</th>
+                    <th>売上金額 前週比 (%)</th>
+                    <th>売上数量 前週比 (%)</th>
+
+                    <th>粗利</th>
+                    <th>粗利率 (%)</th>
+                    <th>昨年粗利</th>
+                    <th>昨年粗利率 (%)</th>
+
+                    <th>在庫原価</th>
+
+                    <th>在庫数</th>
+                    <th>在庫週数</th>
+
+                    <th>今期平均単価</th>
+
+                    <th>売上構成比 (%)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <th:block th:each="entry : ${record.entrySet()}">
+                    <th:block th:each="value, stat : ${entry.value}">
+                        <tr>
+                            <td th:rowspan="${#lists.size(entry.value)}" th:text="${entry.key}" th:if="${stat.index == 0}"></td>
+                            <td th:text="${value.childProductType}"
+                                    th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.salesAmount, 1, 'COMMA', 0, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.quantity, 1, 'COMMA', 0, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.salesAmountChangeRate, 1, 'COMMA', 2, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.quantityChangeRate, 1, 'COMMA', 2, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.profit, 1, 'COMMA', 0, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.profitRate, 1, 'COMMA', 2, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.previousYearProfit, 1, 'COMMA', 0, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.previousYearProfitRate, 1, 'COMMA', 2, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.stockWholesalePrice, 1, 'COMMA', 0, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.stock, 1, 'COMMA', 0, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:text="${#numbers.formatDecimal(value.stockWeek, 1, 'COMMA', 1, 'POINT')}"> </td>
+                            <td th:text="${#numbers.formatDecimal(value.averageAmount, 1, 'COMMA', 0, 'POINT')}"> </td>
+                            <td th:text="${#numbers.formatDecimal(value.salesCompositionRate, 1, 'COMMA', 2, 'POINT')}"
+                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"
+                            ></td>
+                        </tr>
+                    </th:block>
+                </th:block>
+                </tbody>
+                <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="2">合計</td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesAmount'], 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalQuantity'], 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesAmountChangeRate'], 1, 'COMMA', 1, 'POINT')}">%</td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalQuantityChangeRate'], 1, 'COMMA', 1, 'POINT')}">%</td>
+
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalProfit'], 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalProfitRate'], 1, 'COMMA', 2, 'POINT')}">%</td>
+
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalPreviousYearProfit'], 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalPreviousYearProfitRate'], 1, 'COMMA', 2, 'POINT')}">%</td>
+
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalStockWholesalePrice'], 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalStock'], 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalStockWeek'], 1, 'COMMA', 0, 'POINT')}"></td>
+
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalAverageAmount'], 1, 'COMMA', 0, 'POINT')}"></td>
+
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesCompositionRate'], 1, 'COMMA', 2, 'POINT')}"></td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- 商品別売上のテーブル -->
+        <h2 class="mt-5 mb-4 fw-bold text-muted text-center">商品別売上</h2>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered text-center align-middle">
+                <thead>
+                <tr>
+                    <th>ブランド品番</th>
+                    <th>商品名</th>
+                    <th style="background-color: #f5b3f6; color: rgba(93,93,93,0.76)">売金</th>
+                    <th>売上数量(当週)</th>
+                    <th>原価</th>
+                    <th>利益</th>
+                    <th>売上数量(直近3wk)</th>
+                    <th>売上数量(直近10wk)</th>
+                    <th>発注数(直近10wk)</th>
+                    <th>在庫</th>
+                    <th>入荷予定数</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="result : ${itemRecord}" class="clickable-row">
+                    <td style="text-align: left" th:text="${result.brandCode}"
+                        th:with="ratio=${(result.stock + result.expectedOrderAmount) / result.totalSalesAmount}"
+                        th:classappend="${ratio > 15} ? 'high-ratio' : (${ratio > 11} ? 'medium-ratio' : (${ratio < 6} ? 'low-ratio' : ''))">
+                    </td>
+                    <td th:text="${result.productName}" style="text-align: left"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSales, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalWholeSales, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.profit, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount3Week, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount10Week, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.orderAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.stock, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.expectedOrderAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -55,73 +257,17 @@
         });
     </script>
 
-    <div class="card card-custom p-4 mb-5">
-        <h2 class="mb-4 fw-bold text-muted text-center">全体 売上結果</h2>
-        <div class="table-responsive">
-            <table class="table table-hover table-bordered text-center align-middle">
-                <thead>
-                <tr>
-                    <th>子商品タイプ</th>
-                    <th>売上金額合計</th>
-                    <th>売上金額 前週比 (%)</th>
-                    <th>売上数量合計</th>
-                    <th>売上数量 前週比 (%)</th>
-                    <th>粗利</th>
-                    <th>粗利率 (%)</th>
-                    <th>昨年粗利</th>
-                    <th>昨年粗利率 (%)</th>
-                    <th>売上構成比 (%)</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="result : ${record}">
-                    <td th:text="${result.childProductType}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.salesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.salesAmountChangeRate, 1, 'COMMA', 2, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.quantity, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.quantityChangeRate, 1, 'COMMA', 2, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.profit, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.profitRate, 1, 'COMMA', 2, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.previousYearProfit, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.previousYearProfitRate, 1, 'COMMA', 2, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.salesCompositionRate, 1, 'COMMA', 2, 'POINT')}"></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card card-custom p-4">
-        <h2 class="mb-4 fw-bold text-muted text-center">商品別 売上結果</h2>
-        <div class="table-responsive">
-            <table class="table table-hover table-bordered text-center align-middle">
-                <thead>
-                <tr>
-                    <th>ブランド品番</th>
-                    <th>商品名</th>
-                    <th>売金</th>
-                    <th>売上数量</th>
-                    <th>原価</th>
-                    <th>利益</th>
-                    <th>発注数</th>
-                    <th>在庫</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="result : ${itemRecord}">
-                    <td th:text="${result.brandCode}"></td>
-                    <td th:text="${result.productName}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.totalSales, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.totalWholeSales, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.profit, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.orderAmount, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.stock, 1, 'COMMA', 0, 'POINT')}"></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var rows = document.querySelectorAll('.clickable-row');
+            rows.forEach(function(row) {
+                row.addEventListener('click', function() {
+                    var productId = row.cells[0].textContent;
+                    window.location.href = '/item-analysis?id=' + encodeURIComponent(productId);
+                });
+            });
+        });
+    </script>
 
     <div class="text-center mt-5">
         <a href="/" class="btn btn-home btn-lg">🏠 ホームに戻る</a>

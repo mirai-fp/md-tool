@@ -16,5 +16,8 @@ public class AnalysisItemResult {
     private double profit; // 利益
 
     private double totalWholeSales; // 原価合計
-    private double orderAmount; // 発注数
+    private double orderAmount; // 発注数(10wk)
+    private double expectedOrderAmount; // 発注予定(10週先まで)
+    private double totalSalesAmount3Week;      // 売上数合計(3wk)
+    private double totalSalesAmount10Week;      // 売上数合計(10wk)
 }

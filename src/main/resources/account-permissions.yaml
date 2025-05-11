@@ -1,0 +1,12 @@
+account-permissions:
+  permissions:
+    corp-wa:
+      - HANNE
+      - アン
+      - DRWCYS
+      - ドロシーズ
+    corp-wa-brand:
+      - HANNE
+      - DRWCYS
+    アカウント2:
+      - 許可ブランド2

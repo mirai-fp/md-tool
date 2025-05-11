@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="layout :: commonHead">
     <title>分析結果一覧</title>
 </head>
@@ -12,12 +12,56 @@
     </div>
 
     <div class="card card-custom p-4 mb-5">
-        <h2 class="mb-4 fw-bold text-muted text-center">月累計</h2>
+        <!-- 検索フォーム -->
+        <form th:action="@{/analysis}" method="get" class="row g-3">
+            <!-- ブランド名プルダウン -->
+            <div class="col-md-6">
+                <label for="brand" class="form-label">ブランド名</label>
+                <select id="brand" name="brand" class="form-select">
+                    <option value=""
+                            th:selected="${brandList == null}">
+                        -- 未指定 --
+                    </option>
+                    <option th:each="brand : ${brandList}"
+                            th:value="${brand}"
+                            th:text="${brand}"
+                            th:selected="${brand == selectedBrand}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- 集計対象週プルダウン -->
+            <div class="col-md-6">
+                <label for="week" class="form-label">集計対象週</label>
+                <select id="week" name="week" class="form-select">
+                    <!-- model に weekList として 例えば ["2025-W07","2025-W08",…] を渡しておく -->
+                    <option th:each="opt : ${weekOptions}"
+                            th:value="${opt.code}"
+                            th:text="${opt.label[0]}"
+                            th:selected="${(opt.code == selectedWeek) || ((selectedWeek == null or #strings.isEmpty(selectedWeek)) and opt.defaultFlag)}"
+                    >
+                    </option>
+                </select>
+            </div>
+
+            <!-- 検索ボタン -->
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">検索</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card card-custom p-4 mb-5">
+        <h2 class="mb-4 fw-bold text-muted text-center" th:text="${month eq null ? '' : month} + '月累計'"></h2>
         <div class="table-responsive">
-            <table class="table table-hover table-bordered text-center align-middle">
+            <button onclick="exportStyledExcel('monthlyTable', '月データ.xlsx')">Excelダウンロード</button>
+            <table id="monthlyTable" class="table table-hover table-bordered text-center align-middle">
                 <thead>
                 <tr>
                     <th>親商品タイプ</th>
+                    <th>売上金額合計</th>
+                    <th>構成比</th>
+
                     <th>子商品タイプ</th>
                     <th>売上実績</th>
                     <th>昨年売上合計</th>
@@ -30,6 +74,8 @@
                     <th:block th:each="value, stat : ${entry.value}">
                         <tr>
                             <td th:rowspan="${#lists.size(entry.value)}" th:text="${entry.key}" th:if="${stat.index == 0}"></td>
+                            <td th:rowspan="${#lists.size(entry.value)}" th:text="${#numbers.formatDecimal(collectRecord.getTotalAmountByOverallResult(value.getParentProductType), 1, 'COMMA', 0, 'POINT')}" th:if="${stat.index == 0}"></td>
+                            <td th:rowspan="${#lists.size(entry.value)}" th:text="${#numbers.formatDecimal(collectRecord.getTotalAmountRateByOverallResult(value.getParentProductType), 1, 'COMMA', 1, 'POINT')}+'%'" th:if="${stat.index == 0}">%</td>
                             <td th:text="${value.childProductType}"></td>
                             <td th:text="${#numbers.formatDecimal(value.monthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
                             <td th:text="${#numbers.formatDecimal(value.previousMonthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
@@ -41,17 +87,18 @@
                 </tbody>
                 <tfoot>
                 <tr class="fw-bold">
-                    <td colspan="2">合計</td>
+                    <td colspan="4">合計</td>
                     <td th:text="${#numbers.formatDecimal(collectRecord.totalMonthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
                     <td th:text="${#numbers.formatDecimal(collectRecord.totalPreviousMonthlyAmount, 1, 'COMMA', 0, 'POINT')}"></td>
                     <td th:text="${#numbers.formatDecimal(collectRecord.totalPreviousMonthlyAmountDiff, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${collectRecord.totalPreviousMonthlyAmount != 0 ? #numbers.formatDecimal(collectRecord.totalPreviousMonthlyAmountRate, 1, 'COMMA', 0, 'POINT') : '-'}">%</td>
+                    <td th:text="${collectRecord.totalPreviousMonthlyAmount != 0 ? #numbers.formatDecimal(collectRecord.totalPreviousMonthlyAmountRate, 1, 'COMMA', 0, 'POINT') : '-'}+'%'">%</td>
                 </tr>
                 </tfoot>
             </table>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover table-bordered text-center align-middle">
+            <button onclick="exportStyledExcel('pbTable', 'PBデータ.xlsx')">Excelダウンロード</button>
+            <table id='pbTable' class="table table-hover table-bordered text-center align-middle">
                 <thead>
                 <tr>
                     <th>セールタイプ</th>
@@ -72,7 +119,7 @@
                         <td th:text="${entry.value.totalQuantityCurrentWeek}"></td>
                         <td th:text="${entry.value.totalQuantityPreviousWeek}"></td>
                         <td th:text="${#numbers.formatDecimal(entry.value.totalQuantityChangeRate, 1, 'COMMA', 2, 'POINT')} + '%'"></td>
-                        <td></td>
+                        <td th:text="${#numbers.formatDecimal(entry.value.getSalesAmountChangeRate * 100, 1, 'COMMA', 2, 'POINT')} + '%'"></td>
                     </tr>
                 </th:block>
                 </tbody>
@@ -82,33 +129,21 @@
 
     <!-- 検索条件フォーム -->
     <div class="card card-custom p-4 mb-4">
-        <h2 class="mb-4 fw-bold text-muted text-center" th:text="'週次売上(' + ${collectRecord.week} + 'wk)'"></h2>
+        <h2 class="mb-4 fw-bold text-muted text-center" th:text="'週次売上(' + ${collectRecord.week} + 'w)'"></h2>
 
-        <!-- フォーム -->
-        <form th:action="@{/analysis}" method="get" class="row g-3 justify-content-center">
-            <div class="col-md-4">
-                <label for="startDate" class="form-label">開始日付</label>
-                <input type="date" id="startDate" name="startDate" class="form-control" required
-                       th:value="${param.startDate}" />
-            </div>
-            <div class="col-md-4">
-                <label for="endDate" class="form-label">終了日付</label>
-                <input type="date" id="endDate" name="endDate" class="form-control" required
-                       th:value="${param.endDate}" />
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">検索</button>
-            </div>
-        </form>
 
-        <!-- テーブル -->
+        <!-- 週次テーブル -->
         <div class="table-responsive mt-4">
-            <table class="table table-hover table-bordered text-center align-middle">
+            <!-- コピー用ボタン -->
+            <button onclick="exportStyledExcel('weeklyTable', '週データ.xlsx')">Excelダウンロード</button>
+            <table id="weeklyTable" class="table table-hover table-bordered text-center align-middle">
                 <thead>
                 <tr>
                     <th>親商品タイプ</th>
-                    <th>子商品タイプ</th>
+                    <th>売上金額合計</th>
+                    <th>構成比</th>
 
+                    <th>子商品タイプ</th>
                     <th>売上金額合計</th>
                     <th>売上数量合計</th>
                     <th>売上金額 前週比 (%)</th>
@@ -134,50 +169,39 @@
                     <th:block th:each="value, stat : ${entry.value}">
                         <tr>
                             <td th:rowspan="${#lists.size(entry.value)}" th:text="${entry.key}" th:if="${stat.index == 0}"></td>
-                            <td th:text="${value.childProductType}"
-                                    th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.salesAmount, 1, 'COMMA', 0, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.quantity, 1, 'COMMA', 0, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.salesAmountChangeRate, 1, 'COMMA', 2, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.quantityChangeRate, 1, 'COMMA', 2, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.profit, 1, 'COMMA', 0, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.profitRate, 1, 'COMMA', 2, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.previousYearProfit, 1, 'COMMA', 0, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.previousYearProfitRate, 1, 'COMMA', 2, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.stockWholesalePrice, 1, 'COMMA', 0, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
-                            <td th:text="${#numbers.formatDecimal(value.stock, 1, 'COMMA', 0, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"></td>
+                            <td th:rowspan="${#lists.size(entry.value)}" th:text="${#numbers.formatDecimal(collectRecord.getTotalAmountByProductTypeResult(value.getParentProductType()), 1, 'COMMA', 0, 'POINT')}" th:if="${stat.index == 0}"></td>
+                            <td th:rowspan="${#lists.size(entry.value)}" th:text="${#numbers.formatDecimal(collectRecord.getTotalAmountRateByProductTypeResult(value.getParentProductType()), 1, 'COMMA', 1, 'POINT')}+'%'" th:if="${stat.index == 0}"></td>
+                            <td th:text="${value.childProductType}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.salesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.quantity, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.salesAmountChangeRate, 1, 'COMMA', 2, 'POINT')+'%'}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.quantityChangeRate, 1, 'COMMA', 2, 'POINT')+'%'}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.profit, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.profitRate, 1, 'COMMA', 2, 'POINT')+'%'}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.previousYearProfit, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.previousYearProfitRate, 1, 'COMMA', 2, 'POINT')+'%'}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.stockWholesalePrice, 1, 'COMMA', 0, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(value.stock, 1, 'COMMA', 0, 'POINT')}"></td>
                             <td th:text="${#numbers.formatDecimal(value.stockWeek, 1, 'COMMA', 1, 'POINT')}"> </td>
                             <td th:text="${#numbers.formatDecimal(value.averageAmount, 1, 'COMMA', 0, 'POINT')}"> </td>
-                            <td th:text="${#numbers.formatDecimal(value.salesCompositionRate, 1, 'COMMA', 2, 'POINT')}"
-                                th:style="${value.salesCompositionRate > 500} ? 'background-color: #aaffff;' : ''"
-                            ></td>
+                            <td th:text="${#numbers.formatDecimal(value.salesCompositionRate, 1, 'COMMA', 2, 'POINT')+'%'}"></td>
                         </tr>
                     </th:block>
                 </th:block>
                 </tbody>
                 <tfoot>
                 <tr class="fw-bold">
-                    <td colspan="2">合計</td>
+                    <td colspan="4">合計</td>
                     <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesAmount'], 1, 'COMMA', 0, 'POINT')}"></td>
                     <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalQuantity'], 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesAmountChangeRate'], 1, 'COMMA', 1, 'POINT')}">%</td>
-                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalQuantityChangeRate'], 1, 'COMMA', 1, 'POINT')}">%</td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesAmountChangeRate'], 1, 'COMMA', 1, 'POINT')}+'%'">%</td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalQuantityChangeRate'], 1, 'COMMA', 1, 'POINT')}+'%'">%</td>
 
                     <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalProfit'], 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalProfitRate'], 1, 'COMMA', 2, 'POINT')}">%</td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalProfitRate'], 1, 'COMMA', 2, 'POINT')+'%'}">%</td>
 
                     <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalPreviousYearProfit'], 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalPreviousYearProfitRate'], 1, 'COMMA', 2, 'POINT')}">%</td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalPreviousYearProfitRate'], 1, 'COMMA', 2, 'POINT')+'%'}">%</td>
 
                     <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalStockWholesalePrice'], 1, 'COMMA', 0, 'POINT')}"></td>
                     <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalStock'], 1, 'COMMA', 0, 'POINT')}"></td>
@@ -185,29 +209,34 @@
 
                     <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalAverageAmount'], 1, 'COMMA', 0, 'POINT')}"></td>
 
-                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesCompositionRate'], 1, 'COMMA', 2, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(collectRecord.productTypeTotals['totalSalesCompositionRate'], 1, 'COMMA', 2, 'POINT')+'%'}"></td>
                 </tr>
                 </tfoot>
             </table>
         </div>
 
         <!-- 商品別売上のテーブル -->
-        <h2 class="mt-5 mb-4 fw-bold text-muted text-center">商品別売上</h2>
+        <h2 class="mt-5 mb-4 fw-bold text-muted text-center" th:text="'TOPセラー(' + ${collectRecord.week} + 'w)'"></h2>
         <div class="table-responsive">
-            <table class="table table-hover table-bordered text-center align-middle">
+            <button onclick="exportStyledExcel('topSellerTable', 'TOPセラーデータ.xlsx')">Excelダウンロード</button>
+            <table id="topSellerTable" class="table table-hover table-bordered text-center align-middle">
                 <thead>
                 <tr>
                     <th>ブランド品番</th>
                     <th>商品名</th>
-                    <th style="background-color: #f5b3f6; color: rgba(93,93,93,0.76)">売金</th>
-                    <th>売上数量(当週)</th>
-                    <th>原価</th>
-                    <th>利益</th>
-                    <th>売上数量(直近3wk)</th>
-                    <th>売上数量(直近10wk)</th>
-                    <th>発注数(直近10wk)</th>
+                    <th>下代</th>
+                    <th>元上代</th>
+                    <th>平均</th>
+                    <th>合計</th>
+                    <th th:text="'売上数量(' + ${collectRecord.week} + 'w)'"></th>
+                    <th th:text="'売上数量(' + ${collectRecord.week - 1} + 'w)'"></th>
+                    <th>前週比</th>
                     <th>在庫</th>
-                    <th>入荷予定数</th>
+                    <th>発注残</th>
+                    <th>在庫週数</th>
+                    <th th:text="${collectRecord.week} + 'wお気に入り'"></th>
+                    <th th:text="${collectRecord.week - 1} + 'wお気に入り'"></th>
+                    <th>前週比</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -217,15 +246,19 @@
                         th:classappend="${ratio > 15} ? 'high-ratio' : (${ratio > 11} ? 'medium-ratio' : (${ratio < 6} ? 'low-ratio' : ''))">
                     </td>
                     <td th:text="${result.productName}" style="text-align: left"></td>
+                    <td th:text="${#numbers.formatDecimal(result.wholesalePrice, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.retailPrice, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal((result.totalSales / result.totalSalesAmount), 1, 'COMMA', 0, 'POINT')}"></td>
                     <td th:text="${#numbers.formatDecimal(result.totalSales, 1, 'COMMA', 0, 'POINT')}"></td>
                     <td th:text="${#numbers.formatDecimal(result.totalSalesAmount, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.totalWholeSales, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.profit, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount3Week, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount10Week, 1, 'COMMA', 0, 'POINT')}"></td>
-                    <td th:text="${#numbers.formatDecimal(result.orderAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount1WeekAgo, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.totalSalesAmount / result.totalSalesAmount1WeekAgo * 100, 1, 'COMMA', 2, 'POINT')} + '%'"></td>
                     <td th:text="${#numbers.formatDecimal(result.stock, 1, 'COMMA', 0, 'POINT')}"></td>
                     <td th:text="${#numbers.formatDecimal(result.expectedOrderAmount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal((result.stock + result.expectedOrderAmount) / result.totalSalesAmount, 1, 'COMMA', 1, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.favoriteCount, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.favoriteCount1WeekAgo, 1, 'COMMA', 0, 'POINT')}"></td>
+                    <td th:text="${#numbers.formatDecimal(result.favoriteCount / result.favoriteCount1WeekAgo * 100, 1, 'COMMA', 0, 'POINT')} + '%'"></td>
                 </tr>
                 </tbody>
             </table>
@@ -267,6 +300,103 @@
                 });
             });
         });
+    </script>
+
+    <script>
+        function exportStyledExcel(tableId, filename = 'table.xlsx') {
+            const table = document.getElementById(tableId);
+            if (!table) return alert("テーブルが見つかりません");
+
+            const wb = XLSX.utils.book_new();
+            const ws = {};
+            const data = [];
+            const merges = [];
+            const cellMatrix = [];
+
+            const rows = Array.from(table.rows);
+
+            for (let r = 0; r < rows.length; r++) {
+                const row = rows[r];
+                const rowData = [];
+                let colIndex = 0;
+
+                while (cellMatrix[r]?.[colIndex]) colIndex++;
+
+                Array.from(row.cells).forEach(cell => {
+                    const rowspan = cell.rowSpan || 1;
+                    const colspan = cell.colSpan || 1;
+
+                    // 結合情報
+                    if (rowspan > 1 || colspan > 1) {
+                        merges.push({
+                            s: { r, c: colIndex },
+                            e: { r: r + rowspan - 1, c: colIndex + colspan - 1 }
+                        });
+                    }
+
+                    // セル値の型推定
+                    let rawText = cell.innerText.trim();
+                    let value = rawText;
+                    if (/^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(rawText)) {
+                        value = parseFloat(rawText.replace(/,/g, ''));
+                    }
+
+                    // セルスタイル（背景・文字色・太字など）
+                    const style = window.getComputedStyle(cell);
+                    const cellStyle = {
+                        fill: {
+                            patternType: "solid",
+                            fgColor: { rgb: rgb2hex(style.backgroundColor) } },
+                        font: {
+                            bold: style.fontWeight >= 600,
+                            color: { rgb: rgb2hex(style.color) }
+                        },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } },
+                        }
+                    };
+
+                    const cellRef = XLSX.utils.encode_cell({ r, c: colIndex });
+                    ws[cellRef] = {
+                        v: value,
+                        t: typeof value === "number" ? "n" : "s",
+                        s: cellStyle
+                    };
+
+                    // 埋めた範囲を記録
+                    for (let i = 0; i < rowspan; i++) {
+                        for (let j = 0; j < colspan; j++) {
+                            if (!cellMatrix[r + i]) cellMatrix[r + i] = [];
+                            cellMatrix[r + i][colIndex + j] = true;
+                        }
+                    }
+
+                    colIndex += colspan;
+                });
+            }
+
+            // 範囲（!ref）
+            const range = {
+                s: { r: 0, c: 0 },
+                e: { r: rows.length - 1, c: Math.max(...cellMatrix.map(row => row?.length || 0)) - 1 }
+            };
+            ws['!ref'] = XLSX.utils.encode_range(range);
+            ws['!merges'] = merges;
+
+            // ワークブックに追加
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            XLSX.writeFile(wb, filename);
+
+            // 色コードをRGBからHexに変換（例: rgb(255, 255, 255) → FFFFFF）
+            function rgb2hex(rgb) {
+                if (!rgb || rgb === 'rgba(0, 0, 0, 0)') return "FFFFFF";
+                const result = rgb.match(/\d+/g).map(n => parseInt(n).toString(16).padStart(2, '0'));
+                return result.length === 3 ? result.join('').toUpperCase() : "FFFFFF";
+            }
+        }
     </script>
 
     <div class="text-center mt-5">

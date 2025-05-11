@@ -13,5 +13,9 @@ import java.util.Optional;
 @Repository
 public interface StockDataRepository extends JpaRepository<StockData, Long> {
     Optional<List<StockData>> findByBrandCode(String brandCode);
+
+    Optional<List<StockData>> findByBrandCodeAndDate(String brandCode, LocalDate date);
+
+    Optional<List<StockData>> findByDate(LocalDate date);
 }
 

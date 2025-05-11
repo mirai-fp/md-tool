@@ -13,6 +13,7 @@ public class OrderData {
     @Id
     private String id;
 
+    private String brand;
     private String brandCode;
     private String productName;
     private String color;

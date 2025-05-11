@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="layout :: commonHead">
     <title>分析結果確認</title>
 </head>
 <body>
 <header th:replace="layout :: commonHeader"></header>
 <h1 class="mb-4">売上データ読み込み完了</h1>
-<table class="table table-bordered">
-    <tbody>
-    <tr th:each="cell : ${firstRecord}">
-        <td th:text="${cell}">Cell</td>
-    </tr>
-    </tbody>
-</table>
+<h2 class="mt-4">処理結果</h2>
+<div th:if="${#lists.isEmpty(result)}">
+    <p>処理完了</p>
+</div>
+<ul th:if="${!#lists.isEmpty(result)}">
+    <li th:each="item : ${result}" th:text="${item}">処理内容</li>
+</ul>
+
 <a th:href="@{/}" class="btn btn-secondary mt-3">Back to Upload</a>
 <div th:replace="layout :: commonScripts"></div>
 </body>

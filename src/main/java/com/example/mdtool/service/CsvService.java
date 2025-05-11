@@ -1,8 +1,11 @@
 package com.example.mdtool.service;
 
+import com.example.mdtool.config.AccountPermissionProperties;
+import com.example.mdtool.domain.FavoriteData;
 import com.example.mdtool.domain.OrderData;
 import com.example.mdtool.domain.SalesData;
 import com.example.mdtool.domain.StockData;
+import com.example.mdtool.repository.FavoriteDataRepository;
 import com.example.mdtool.repository.OrderDataRepository;
 import com.example.mdtool.repository.SaleDataRepository;
 import com.example.mdtool.repository.StockDataRepository;
@@ -11,12 +14,15 @@ import com.ibm.icu.text.CharsetMatch;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class CsvService {
@@ -30,13 +36,21 @@ public class CsvService {
     @Autowired
     private OrderDataRepository orderDataRepository;
 
+    @Autowired
+    private FavoriteDataRepository favoriteDataRepository;
 
-    public void processSalesCSV(MultipartFile file) throws IOException {
+    @Autowired
+    private AccountPermissionProperties accountPermissionProperties;
+
+
+    public List<String> processSalesCSV(MultipartFile file) throws IOException {
+        List<String> result = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), detectEncoding(file)))) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT
                     .withFirstRecordAsHeader()
                     .parse(reader);
 
+            int count = 2;
             for (CSVRecord record : records) {
                 SalesData salesData = new SalesData();
                 salesData.setShopName(record.get("ショップ名"));
@@ -59,26 +73,31 @@ public class CsvService {
                 salesData.setOrderDate(LocalDate.parse(record.get("注文日"), DateTimeFormatter.ofPattern("yyyyMMdd")));
                 salesData.setBarcode(record.get("バーコード"));
                 salesData.setMall(record.get("モール"));
-                String id = salesData.getBrandCode() + salesData.getCsCode() + salesData.getPriceType() + salesData.getSellingType() + salesData.getSellingPrice() + salesData.getMall() + salesData.getOrderDate().toString();
+                String id = salesData.getParentCategory() + salesData.getBrandCode() + salesData.getCsCode() + salesData.getPriceType() + salesData.getSellingType() + salesData.getSellingPrice() + salesData.getMall() + salesData.getOrderDate().toString();
                 salesData.setIds(id);
                 salesData.setItemHashCode(salesData.getBrandCode() + salesData.getCsCode());
 
-                SalesData data = saleDataRepository.findByIds(id);
-                if (data != null) {
-                    System.out.println(id);
+                if (isAllowedBrand(salesData.getParentCategory())) {
+                    saleDataRepository.save(salesData);
+                }
+                else {
+                    result.add(count + "行目, 未許可ブランド: " + salesData.getParentCategory());
                 }
 
-                saleDataRepository.save(salesData);
+                count++;
             }
         }
+        return result;
     }
 
-    public void processStockCSV(MultipartFile file) throws IOException {
+    public List<String> processStockCSV(MultipartFile file, LocalDate date) throws IOException {
+        List<String> result = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), detectEncoding(file)))) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT
                     .withFirstRecordAsHeader()
                     .parse(reader);
 
+            int count = 2;
             for (CSVRecord record : records) {
                 StockData stockData = new StockData();
                 stockData.setShopName(record.get("ショップ名"));
@@ -92,23 +111,38 @@ public class CsvService {
                 stockData.setSize(record.get("サイズ"));
                 stockData.setSellingPrice(Double.parseDouble(record.get("販売価格(税抜)")));
                 stockData.setPriceType(record.get("価格タイプ"));
-                stockData.setStock(Double.parseDouble(record.get("在庫数")));
-                stockData.setId(stockData.getBrandCode() + stockData.getCsCode());
+                stockData.setStock(Integer.parseInt(record.get("在庫数")));
+                stockData.setId(stockData.getParentCategory() + stockData.getBrandCode() + stockData.getColor() + stockData.getSize());
+                stockData.setDate(date);
                 stockData.setItemHashCode(stockData.getBrandCode() + stockData.getCsCode());
 
-                stockDataRepository.save(stockData);
+                if (isAllowedBrand(stockData.getParentCategory())) {
+                    stockDataRepository.save(stockData);
+                }
+                else {
+                    result.add(count + "行目, 未許可ブランド: " + stockData.getParentCategory());
+                }
+
+                count++;
             }
         }
+        return result;
     }
 
-    public void processOrderCSV(MultipartFile file) throws IOException {
+    public List<String> processOrderCSV(MultipartFile file) throws IOException {
+        List<String> result = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), detectEncoding(file)))) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT
                     .withFirstRecordAsHeader()
                     .parse(reader);
 
+            int count = 2;
             for (CSVRecord record : records) {
+                if (Integer.parseInt(record.get("発注数")) == 0) {
+                    continue;
+                }
                 OrderData orderData = new OrderData();
+                orderData.setBrand(record.get("ブランド"));
                 orderData.setBrandCode(record.get("品番"));
                 orderData.setProductName(record.get("商品名"));
                 orderData.setColor(record.get("カラー"));
@@ -117,11 +151,53 @@ public class CsvService {
                 orderData.setWholesalePrice(Integer.parseInt(record.get("下代")));
                 orderData.setOrderDate(LocalDate.parse(record.get("発注日"), DateTimeFormatter.ofPattern("yyyy/MM/dd")));
                 orderData.setOrderQuantity(Integer.parseInt(record.get("発注数")));
-                orderData.setId(orderData.getColor() + orderData.getSize() + record.get("発注書番号"));
+                orderData.setId(orderData.getBrand() + orderData.getBrandCode() + orderData.getColor() + orderData.getSize() + record.get("発注書番号"));
                 orderData.setDeliveryDate(LocalDate.parse(record.get("入荷希望日"), DateTimeFormatter.ofPattern("yyyy/MM/dd")));
-                orderDataRepository.save(orderData);
+
+                if (isAllowedBrand(orderData.getBrand())) {
+                    orderDataRepository.save(orderData);
+                }
+                else {
+                    result.add("ファイル名:" + file.getOriginalFilename() + ", " + count + "行目, 未許可ブランド: " + orderData.getBrand());
+                }
+
+                count++;
             }
         }
+        return result;
+    }
+
+    public List<String> processFavCSV(MultipartFile file, LocalDate date) throws IOException {
+        List<String> result = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), detectEncoding(file)))) {
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .parse(reader);
+
+            int count = 2;
+            for (CSVRecord record : records) {
+                FavoriteData favData = new FavoriteData();
+                favData.setParentCategory(record.get("親カテゴリ"));
+                favData.setBrandCode(record.get("ブランド品番"));
+                favData.setProductName(record.get("商品名"));
+                favData.setPriceType(record.get("価格タイプ"));
+                favData.setSalesPrice(Integer.parseInt(record.get("価格（税抜）").replaceAll("[,，]", "").trim()));
+                favData.setFavoriteCount(Integer.parseInt(record.get("登録数")));
+                favData.setDate(date);
+                String id = favData.getParentCategory() + favData.getBrandCode() + favData.getPriceType() + favData.getDate().toString();
+                favData.setId(id);
+
+                if (isAllowedBrand(favData.getParentCategory())) {
+                    favoriteDataRepository.save(favData);
+                }
+                else {
+                    result.add(count + "行目, 未許可ブランド: " + favData.getParentCategory());
+                }
+
+                count++;
+            }
+        }
+        return result;
     }
 
     private  String detectEncoding(MultipartFile file) throws IOException {
@@ -131,6 +207,11 @@ public class CsvService {
             CharsetMatch match = detector.detect();
             return match != null ? match.getName() : "UTF-8"; // デフォルトUTF-8
         }
+    }
+
+    private boolean isAllowedBrand(String brandName) {
+        String account = SecurityContextHolder.getContext().getAuthentication().getName();
+        return accountPermissionProperties.isBrandAllowed(account, brandName);
     }
 
 }

@@ -4,6 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Data
 @Entity
 public class StockData {
@@ -22,6 +24,7 @@ public class StockData {
     private String size;
     private Double sellingPrice;
     private String priceType;
-    private Double stock;
+    private Integer stock;
     private String itemHashCode;
+    private LocalDate date;
 }

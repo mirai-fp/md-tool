@@ -2,6 +2,7 @@ package com.example.mdtool.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class AnalysisResult {
     // 月次集計
     private Map<String, List<AnalysisOverallResult>> analysisOverallResult;
@@ -19,7 +21,7 @@ public class AnalysisResult {
     // 子タイプ別の週次集計
     private Map<String, List<AnalysisProductTypeResult>> analysisProductTypeResult;
 
-    //
+    //　商品別集計
     private List<AnalysisItemResult> analysisItemResult;
 
     // 表示対象の週
@@ -144,8 +146,35 @@ public class AnalysisResult {
         return totals;
     }
 
-    // PB比率系
-    public double getProperSalesAmountRate() {
-        return 0;//getTotalMonthlyAmount() analysisPBResult.get("プロパー")
+    public int getTotalAmountByOverallResult(String productType) {
+        return (int) analysisOverallResult.get(productType)
+                .stream()
+                .mapToDouble(AnalysisOverallResult::getMonthlyAmount)
+                .sum();
+    }
+
+    public double getTotalAmountRateByOverallResult(String productType) {
+        return (int) analysisOverallResult.get(productType)
+                .stream()
+                .mapToDouble(AnalysisOverallResult::getMonthlyAmount)
+                .sum()
+                /
+                getTotalMonthlyAmount() * 100;
+    }
+
+    public int getTotalAmountByProductTypeResult(String productType) {
+        return (int) analysisProductTypeResult.get(productType)
+                .stream()
+                .mapToDouble(AnalysisProductTypeResult::getSalesAmount)
+                .sum();
+    }
+
+    public double getTotalAmountRateByProductTypeResult(String productType) {
+        return analysisProductTypeResult.get(productType)
+                .stream()
+                .mapToDouble(AnalysisProductTypeResult::getSalesAmount)
+                .sum()
+                /
+                getProductTypeTotals().get("totalSalesAmount") * 100;
     }
 }

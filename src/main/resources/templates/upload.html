@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="layout :: commonHead">
     <title>⚙️ CSVアップロード管理</title>
 </head>
@@ -11,7 +11,7 @@
         <p class="text-muted">売上・在庫・商品発注管理のCSVファイルをアップロードできます</p>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 mb-3">
         <!-- 売上CSVアップロード -->
         <div class="col-md-4">
             <div class="card shadow-sm border-0 h-100">
@@ -31,6 +31,15 @@
                 <div class="card-body d-flex flex-column justify-content-between">
                     <h5 class="card-title text-center mb-4 text-muted">📦 在庫CSVアップロード</h5>
                     <form method="post" enctype="multipart/form-data" th:action="@{/uploadstock}">
+                        <select id="stockweek" name="stockweek" class="form-select b-3 mb-3">
+                            <!-- model に weekList として 例えば ["2025-W07","2025-W08",…] を渡しておく -->
+                            <option th:each="opt : ${weekOptions}"
+                                    th:value="${opt.code}"
+                                    th:text="${opt.label[0]}"
+                                    th:selected="${opt.defaultFlag}"
+                            >
+                            </option>
+                        </select>
                         <input type="file" class="form-control mb-3" name="file" accept=".csv" required>
                         <button type="submit" class="btn btn-secondary w-100">アップロード</button>
                     </form>
@@ -44,13 +53,79 @@
                 <div class="card-body d-flex flex-column justify-content-between">
                     <h5 class="card-title text-center mb-4 text-muted">🛒 商品発注管理CSVアップロード</h5>
                     <form method="post" enctype="multipart/form-data" th:action="@{/uploadorder}">
-                        <input type="file" class="form-control mb-3" name="file" accept=".csv" required>
+                        <input type="file" class="form-control mb-3" name="files" accept=".csv" multiple required>
                         <button type="submit" class="btn btn-secondary w-100">アップロード</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row g-4">
+        <!-- お気に入りCSVアップロード -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <h5 class="card-title text-center mb-4 text-muted">⭐️ お気に入りCSVアップロード</h5>
+                    <form method="post" enctype="multipart/form-data" th:action="@{/uploadfav}">
+                        <select id="favweek" name="favweek" class="form-select b-3 mb-3">
+                            <!-- model に weekList として 例えば ["2025-W07","2025-W08",…] を渡しておく -->
+                            <option th:each="opt : ${weekOptions}"
+                                    th:value="${opt.code}"
+                                    th:text="${opt.label[1]}"
+                                    th:selected="${opt.defaultFlag}"
+                            >
+                            </option>
+                        </select>
+                        <input type="file" class="form-control mb-3" name="file" accept=".csv" required />
+                        <button type="submit" class="btn btn-secondary w-100">アップロード</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const dateInput = document.getElementById("favdate");
+
+            dateInput.addEventListener("change", function () {
+                const selectedDate = new Date(this.value);
+                const day = selectedDate.getDay(); // 0:日, 1:月, ..., 6:土
+
+                if (day !== 1) {
+                    alert("月曜日のみ選択できます。");
+                    this.value = ""; // 入力をリセット
+                }
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const dateInput = document.getElementById("stockdate");
+            const favDateInput = document.getElementById("favdate");
+
+            dateInput.addEventListener("change", function () {
+                const selectedDate = new Date(this.value);
+                const day = selectedDate.getDay(); // 0:日, 1:月, ..., 6:土
+
+                if (day !== 1) {
+                    alert("月曜日のみ選択できます。");
+                    this.value = ""; // 入力をリセット
+                }
+            });
+            favDateInput.addEventListener("change", function () {
+                const selectedDate = new Date(this.value);
+                const day = selectedDate.getDay(); // 0:日, 1:月, ..., 6:土
+
+                if (day !== 1) {
+                    alert("月曜日のみ選択できます。");
+                    this.value = ""; // 入力をリセット
+                }
+            });
+        });
+    </script>
 
     <div th:if="${message}" class="alert alert-info text-center mt-4" th:text="${message}"></div>
 

@@ -62,6 +62,8 @@ public class CategoryMapper {
         CATEGORY_MAP.put("スラックス", "PT");
         CATEGORY_MAP.put("カーゴパンツ", "PT");
         CATEGORY_MAP.put("デニムパンツ", "PT");
+        CATEGORY_MAP.put("つなぎ/オールインワン", "PT");
+        CATEGORY_MAP.put("サロペット/オーバーオール", "PT");
 
         // SHOES
         CATEGORY_MAP.put("シューズ", "SHOES");

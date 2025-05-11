@@ -1,737 +1,221 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="layout :: commonHead">
     <title>分析結果一覧</title>
 </head>
 <body>
 <header th:replace="layout :: commonHeader"></header>
-<div class="container">
-    <div class="row">
+<div class="container my-4">
+    <div class="row align-items-center bg-light p-3 rounded shadow-sm">
         <!-- 商品画像 -->
-        <div class="container">
-            <div class="row">
-                <!-- 商品画像 -->
-                <div class="col-md-4">
-                    <img th:src="@{/63086057b_1_d_215.jpg}" alt="商品画像" class="product-image img-thumbnail">
-                </div>
-                <!-- 商品詳細 -->
-                <div class="col-md-8">
-                    <h2>品名：シアーリブカーディガン（AMTIG0122003）</h2>
-                    <div class="product-details">
-                        <table class="table table-hover table-bordered text-center align-middle">
-                            <tbody>
-                            <tr>
-                                <th scope="row">上代</th>
-                                <td>¥3,500</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">下代</th>
-                                <td>¥1,500</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">残在庫</th>
-                                <td>50</td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="col-md-4 text-center">
+            <label class="image-upload-wrapper" for="imageUpload">
+                <div class="upload-placeholder" id="uploadPlaceholder">＋</div>
+                <img id="productImage" alt="商品画像">
+            </label>
+            <input type="file" id="imageUpload" accept="image/*" class="image-upload-input">
+        </div>
+
+        <!-- 商品詳細 -->
+        <div class="col-md-8">
+            <h2 class="mb-3" th:text="'品名：' + ${itemName} + '(' + ${brandCode} + ')'"></h2>
+            <div class="product-details">
+                <table class="table table-hover table-bordered text-center align-middle">
+                    <tbody>
+                    <tr>
+                        <th scope="row">上代</th>
+                        <td th:text="${sellingPrice}"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">下代</th>
+                        <td th:text="${wholesalePrice}"></td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-        <!-- 売上推移チャート -->
+
+    <script>
+        const imageInput = document.getElementById('imageUpload');
+        const productImage = document.getElementById('productImage');
+        const placeholder = document.getElementById('uploadPlaceholder');
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                productImage.src = event.target.result;
+                productImage.style.display = 'block';
+                placeholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
+
+    <!-- 売上推移チャート -->
     <div class="row chart-container">
-        <div class="col-12">
+        <div class="col-12 mb-6">
             <canvas id="salesChart"></canvas>
         </div>
     </div>
+
+    <hr class="mb-3">
+
     <div class="row table-responsive">
-        <div class="col-12">
+        <h2 class="display4 fw-bold text-center text-muted">売点数</h2>
+        <div class="col-12 mb-3">
+            <div>
+                <p th:text="'価格: ' + ${sellingPrice} + '円' "></p>
+                off率:
+                <input type="text" name="discount" style="width: 30px;"> %,
+                <input type="text" name="week" style="width: 30px;"> wから適用
+            </div>
+
             <table class="table table-hover table-bordered text-center align-middle">
                 <thead>
                 <tr>
                     <th rowspan="2">カラー</th>
                     <th rowspan="2">サイズ</th>
-                    <th colspan="5">2024年10月</th>
-                    <th colspan="4">2024年11月</th>
-                    <th colspan="5">2024年12月</th>
-                    <th colspan="4">2025年1月</th>
-                    <th colspan="4">2025年2月</th>
-                    <th colspan="5">2025年3月</th>
-                    <th colspan="5">2025年4月</th>
-                    <th colspan="4">2025年5月</th>
-                    <th colspan="5">2025年6月</th>
+                    <!-- 年月ヘッダー -->
+                    <th th:each="month : ${monthList}" th:colspan="${month.weekNumbers.size()}" th:text="${month.label}"></th>
                 </tr>
                 <tr>
-                    <!-- 2024年10月 -->
-                    <th>39週目</th>
-                    <th>40週目</th>
-                    <th>41週目</th>
-                    <th>42週目</th>
-                    <th>43週目</th>
-                    <!-- 2024年11月 -->
-                    <th>44週目</th>
-                    <th>45週目</th>
-                    <th>46週目</th>
-                    <th>47週目</th>
-                    <!-- 2024年12月 -->
-                    <th>48週目</th>
-                    <th>49週目</th>
-                    <th>50週目</th>
-                    <th>51週目</th>
-                    <th>52週目</th>
-                    <!-- 2025年1月 -->
-                    <th>1週目</th>
-                    <th>2週目</th>
-                    <th>3週目</th>
-                    <th>4週目</th>
-                    <!-- 2025年2月 -->
-                    <th>5週目</th>
-                    <th>6週目</th>
-                    <th>7週目</th>
-                    <th>8週目</th>
-                    <!-- 2025年3月 -->
-                    <th>9週目</th>
-                    <th>10週目</th>
-                    <th>11週目</th>
-                    <th>12週目</th>
-                    <th>13週目</th>
-                    <th>14週目</th>
-                    <th>15週目</th>
-                    <th>16週目</th>
-                    <th>17週目</th>
-                    <th>18週目</th>
-                    <th>19週目</th>
-                    <th>20週目</th>
-                    <th>21週目</th>
-                    <th>22週目</th>
-                    <th>23週目</th>
-                    <th>24週目</th>
-                    <th>25週目</th>
+                    <!-- 週番号ヘッダー -->
+                    <th th:each="week : ${allYearWeeks}" th:text="${week} + '週目'"></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td class="sticky-col">レッド</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td>売上数: 20点<br>
-                    在庫: 70点<br>
-                    お気に入り: 402</td>
-                    <td>売上数: 15点<br>
-                        在庫: 55点<br>
-                        お気に入り: 452</td>
-                    <td>売上数: 13点<br>
-                        在庫: 42点<br>
-                        お気に入り: 420</td>
-                    <td style="color: #AA0000 ">売上数: 13点<br>
-                        在庫: 29点</td>
-                    <td style="color: #AA0000 ">売上数: 13点<br>
-                        在庫: 16点</td>
-                    <td style="color: #AA0000 ">売上数: 13点<br>
-                        在庫: 3点</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ブルー</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td>売上数: 13点<br>
-                        在庫: 65点<br>
-                        お気に入り: 302</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ネイビー</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ホワイト</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ブラック</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">合計</td>
-                    <td class="sticky-col">-</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                <tr th:each="row : ${salesTable}">
+                    <td th:text="${row.color}"></td>
+                    <td th:text="${row.size}"></td>
+                    <td th:each="week : ${allYearWeeks}">
+                        <label>
+                            <input class="form-control border-0" type="text" th:value="${row.weeklySales.get(week)}" width="70px" style="text-align: right">
+                        </label>
+                    </td>
                 </tr>
                 </tbody>
+                <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="2">合計</td>
+                    <td th:each="week : ${allYearWeeks}"
+                        th:text="${salesTableSum.get(week)}">
+                    </td>
+                </tr>
+                </tfoot>
             </table>
         </div>
     </div>
+
     <div class="row table-responsive">
-        <div class="col-12">
+        <h2 class="display4 fw-bold text-center text-muted">在庫</h2>
+        <div class="col-12 mb-3">
             <table class="table table-hover table-bordered text-center align-middle">
                 <thead>
                 <tr>
                     <th rowspan="2">カラー</th>
                     <th rowspan="2">サイズ</th>
-                    <th colspan="5">2024年10月</th>
-                    <th colspan="4">2024年11月</th>
-                    <th colspan="5">2024年12月</th>
-                    <th colspan="4">2025年1月</th>
-                    <th colspan="4">2025年2月</th>
-                    <th colspan="5">2025年3月</th>
-                    <th colspan="5">2025年4月</th>
-                    <th colspan="4">2025年5月</th>
-                    <th colspan="5">2025年6月</th>
+                    <!-- 年月ヘッダー -->
+                    <th th:each="month : ${monthList}" th:colspan="${month.weekNumbers.size()}" th:text="${month.label}"></th>
                 </tr>
                 <tr>
-                    <!-- 2024年10月 -->
-                    <th>39週目</th>
-                    <th>40週目</th>
-                    <th>41週目</th>
-                    <th>42週目</th>
-                    <th>43週目</th>
-                    <!-- 2024年11月 -->
-                    <th>44週目</th>
-                    <th>45週目</th>
-                    <th>46週目</th>
-                    <th>47週目</th>
-                    <!-- 2024年12月 -->
-                    <th>48週目</th>
-                    <th>49週目</th>
-                    <th>50週目</th>
-                    <th>51週目</th>
-                    <th>52週目</th>
-                    <!-- 2025年1月 -->
-                    <th>1週目</th>
-                    <th>2週目</th>
-                    <th>3週目</th>
-                    <th>4週目</th>
-                    <!-- 2025年2月 -->
-                    <th>5週目</th>
-                    <th>6週目</th>
-                    <th>7週目</th>
-                    <th>8週目</th>
-                    <!-- 2025年3月 -->
-                    <th>9週目</th>
-                    <th>10週目</th>
-                    <th>11週目</th>
-                    <th>12週目</th>
-                    <th>13週目</th>
-                    <th>14週目</th>
-                    <th>15週目</th>
-                    <th>16週目</th>
-                    <th>17週目</th>
-                    <th>18週目</th>
-                    <th>19週目</th>
-                    <th>20週目</th>
-                    <th>21週目</th>
-                    <th>22週目</th>
-                    <th>23週目</th>
-                    <th>24週目</th>
-                    <th>25週目</th>
+                    <!-- 週番号ヘッダー -->
+                    <th th:each="week : ${allYearWeeks}" th:text="${week} + '週目'"></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td class="sticky-col">レッド</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td>売上数: 20点<br>
-                        在庫: 70点<br>
-                        お気に入り: 402</td>
-                    <td>売上数: 15点<br>
-                        在庫: 55点<br>
-                        お気に入り: 452</td>
-                    <td>売上数: 13点<br>
-                        在庫: 42点<br>
-                        お気に入り: 420</td>
-                    <td style="color: #AA0000 ">売上数: 13点<br>
-                        在庫: 29点</td>
-                    <td style="color: #AA0000 ">売上数: 13点<br>
-                        在庫: 16点</td>
-                    <td style="color: #AA0000 ">売上数: 13点<br>
-                        在庫: 3点</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ブルー</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td>売上数: 13点</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ネイビー</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ホワイト</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">ブラック</td>
-                    <td class="sticky-col">FREE</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td class="sticky-col">合計</td>
-                    <td class="sticky-col">-</td>
-                    <!-- 各週のデータセル -->
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                <tr th:each="row : ${stockTable}">
+                    <td th:text="${row.color}"></td>
+                    <td th:text="${row.size}"></td>
+                    <td th:each="week : ${allYearWeeks}">
+                        <label>
+                            <input class="form-control border-0" type="text" th:value="${row.weeklyStock.get(week)}" width="70px" style="text-align: right">
+                        </label>
+                    </td>
                 </tr>
                 </tbody>
+                <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="2">合計</td>
+                    <td th:each="week : ${allYearWeeks}"
+                        th:text="${stockTableSum.get(week)}">
+                    </td>
+                </tr>
+                </tfoot>
             </table>
         </div>
+    </div>
+
+    <div class="row table-responsive">
+        <h2 class="display4 fw-bold text-center text-muted">発注予定</h2>
+        <div class="col-12 mb-3">
+            <table class="table table-hover table-bordered text-center align-middle">
+                <thead>
+                <tr>
+                    <th rowspan="2">カラー</th>
+                    <th rowspan="2">サイズ</th>
+                    <!-- 年月ヘッダー -->
+                    <th th:each="month : ${monthList}" th:colspan="${month.weekNumbers.size()}" th:text="${month.label}"></th>
+                </tr>
+                <tr>
+                    <!-- 週番号ヘッダー -->
+                    <th th:each="week : ${allYearWeeks}" th:text="${week} + '週目'"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${orderTable}">
+                    <td th:text="${row.color}"></td>
+                    <td th:text="${row.size}"></td>
+                    <td th:each="week : ${allYearWeeks}">
+                        <label>
+                            <input class="form-control border-0" type="text" th:value="${row.weeklyOrder.get(week)}" width="70px" style="text-align: right">
+                        </label>
+                    </td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="2">合計</td>
+                    <td th:each="week : ${allYearWeeks}"
+                        th:text="${orderTableSum.get(week)}">
+                    </td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="row table-responsive">
+        <h2 class="display4 fw-bold text-center text-muted">お気に入り</h2>
+            <div class="col-12 mb-3">
+                <table class="table table-hover table-bordered text-center align-middle">
+                    <thead>
+                    <tr>
+                        <th rowspan="2">カラー</th>
+                        <th rowspan="2">サイズ</th>
+                        <!-- 年月ヘッダー -->
+                        <th th:each="month : ${monthList}" th:colspan="${month.weekNumbers.size()}" th:text="${month.label}"></th>
+                    </tr>
+                    <tr>
+                        <!-- 週番号ヘッダー -->
+                        <th th:each="week : ${allYearWeeks}" th:text="${week} + '週目'"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${favoriteTable}">
+                        <td colspan="2">お気に入り合計</td>
+                        <td th:each="week : ${allYearWeeks}">
+                            <label>
+                                <input class="form-control border-0" type="text" th:value="${row.weeklyFavorite.get(week)}" width="70px" style="text-align: right">
+                            </label>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
     </div>
 </div>
 <div th:replace="layout :: commonScripts"></div>
